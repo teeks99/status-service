@@ -1,11 +1,22 @@
 # status-service
 This is a simple python service, to be run on nearly any computer, that can query the network (or internet) for the
-status of an exposed host/serivce.
+status of an exposed host/serivce. It will respond with if that host/serivce is up and, if so, the time it took to
+respond.
 
 Currently supported are:
 *   TCP Port
 *   System Ping
 *   HTTP Get Request
+
+In all cases a response for a positive result will take the form (for a 1ms response):
+```json
+{"up": true, "response": 0.001}
+```
+
+The case of a negative result is:
+```json
+{"up": false}
+```
 
 This uses the python [FastAPI](https://fastapi.tiangolo.com/) library to provide the web framework. It includes the
 API documentation for the supported requests in every instance of the service, found in the `/docs` path.
