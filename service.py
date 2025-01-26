@@ -1,5 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
+from typing import Annotated
 
 import socket
 import time
@@ -7,8 +9,11 @@ import subprocess
 import platform
 import re
 import requests
+import auth
 
 app = FastAPI()
+
+security = HTTPBasic()
 
 
 @app.get("/")
@@ -22,7 +27,11 @@ class IpQuery(BaseModel):
 
 
 @app.post("/tcpport/")
-async def tcp_port(query: IpQuery):
+async def tcp_port(credentials: Annotated[HTTPBasicCredentials, Depends(security)],
+                   query: IpQuery):
+    if not auth.check_auth(credentials.username, credentials.password):
+        return {"error": "Invalid API Authentication Key"}
+
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             start = time.perf_counter()
@@ -38,7 +47,11 @@ class PingQuery(BaseModel):
 
 
 @app.post("/systemping/")
-async def system_ping(query: PingQuery):
+async def system_ping(credentials: Annotated[HTTPBasicCredentials, Depends(security)],
+                      query: PingQuery):
+    if not auth.check_auth(credentials.username, credentials.password):
+        return {"error": "Invalid API Authentication Key"}
+
     os_name = platform.system()
 
     if os_name == "Windows":
@@ -73,7 +86,11 @@ class HttpQuery(BaseModel):
 
 
 @app.post("/httpget/")
-async def tcp_port(query: HttpQuery):
+async def tcp_port(credentials: Annotated[HTTPBasicCredentials, Depends(security)],
+                   query: HttpQuery):
+    if not auth.check_auth(credentials.username, credentials.password):
+        return {"error": "Invalid API Authentication Key"}
+
     try:
         port = ""
         if query.port:
