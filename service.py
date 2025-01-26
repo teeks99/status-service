@@ -6,17 +6,20 @@ import time
 import subprocess
 import platform
 import re
+import requests
 
 app = FastAPI()
 
 
 @app.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"unused": "This part of the API is unused"}
+
 
 class IpQuery(BaseModel):
     host: str
-    port: int
+    port: int | None = 80
+
 
 @app.post("/tcpport/")
 async def tcp_port(query: IpQuery):
@@ -32,6 +35,7 @@ async def tcp_port(query: IpQuery):
 
 class PingQuery(BaseModel):
     host: str
+
 
 @app.post("/systemping/")
 async def system_ping(query: PingQuery):
@@ -63,3 +67,25 @@ async def system_ping(query: PingQuery):
 
 class HttpQuery(BaseModel):
     host: str
+    protocol: str | None = "http"
+    port: int | None = None
+    path: str | None = "/"
+
+
+@app.post("/httpget/")
+async def tcp_port(query: HttpQuery):
+    try:
+        port = ""
+        if query.port:
+            port = f":{query.port}"
+
+        start = time.perf_counter()
+        r = requests.get(f"{query.protocol}://{query.host}{port}{query.path}")
+        end = time.perf_counter()
+
+        if r.status_code != requests.codes.ok:
+            raise Exception(f"Bad status code returned: {r.status_code}")
+
+        return {"up": True, "response": end-start}
+    except:
+        return {"up": False}
