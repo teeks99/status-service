@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Host Status Checker</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        .host-entry { margin-bottom: 10px; }
+        .status-up { color: green; }
+        .status-down { color: red; }
+        .status-error { color: orange; }
+    </style>
+</head>
+<body>
+
+    <h1>Host Status Checker</h1>
+
+    <div id="status-container">
+        <!-- Results will be displayed here -->
+    </div>
+
+    <script>
+        const hosts = [
+            "bart",
+            "blinky.teeks99.com",
+        ];
+
+        const apiUrl = "http://skinner:14201/systemping/";
+        const username = "default"; // Replace with your username
+        const password = "insecure"; // Replace with your password
+       
+
+        const statusContainer = document.getElementById('status-container');
+
+       async function checkHostStatus(host) {
+             const hostDiv = document.createElement('div');
+            hostDiv.classList.add('host-entry');
+            hostDiv.innerHTML = `Checking: ${host}... `;
+            statusContainer.appendChild(hostDiv);
+            
+            try {
+                payload = {"host": host};
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                         'Authorization': 'Basic ' + btoa(`${username}:${password}`), // Basic Auth
+                    },
+                    body: JSON.stringify(payload),
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+
+                if (data && typeof data === 'object') {
+                   if(data.up === true) {
+                    hostDiv.innerHTML += `<span class="status-up">UP</span>`;
+                  } else if(data.up === false){
+                    hostDiv.innerHTML += `<span class="status-down">DOWN</span>`;
+                  }else{
+                    hostDiv.innerHTML += `<span class="status-error">Unknown Status</span> (No 'up' key)`;
+                  }
+
+                } else {
+                  hostDiv.innerHTML += `<span class="status-error">Invalid JSON</span>`;
+                }
+
+
+            } catch (error) {
+                hostDiv.innerHTML += `<span class="status-error">Error</span>: ${error.message}`;
+            }
+        }
+
+        async function checkAllHosts() {
+             for(const host of hosts) {
+              await checkHostStatus(host);
+            }
+        }
+       
+       checkAllHosts();
+
+    </script>
+
+</body>
+</html>
