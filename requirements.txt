@@ -1,0 +1,5 @@
+# Web Service and a bunch of dependencies
+fastapi[standard]
+
+# Testing client
+requests
