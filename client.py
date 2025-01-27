@@ -112,6 +112,23 @@ tests = {
             ]
         },
         {
+            "api":"http://jacqueline:14201",
+            "user":"default",
+            "apikey":"insecure",
+            "hosts": [
+                {
+                    "host":"bart",
+                    "tests":[
+                        {
+                            "type":"tcpport",
+                            "description":"Second Service",
+                            "params":{"port":80}
+                        },
+                    ]
+                }
+            ]
+        },
+        {
             "api":"http://skinner:14201",
             "user":"unknownuser",
             "apikey":"insecure",
@@ -145,6 +162,23 @@ tests = {
                 }
             ]
         },
+        {
+            "api":"http://invalid:14201",
+            "user":"default",
+            "apikey":"insecure",
+            "hosts": [
+                {
+                    "host":"bart",
+                    "tests":[
+                        {
+                            "type":"tcpport",
+                            "description":"Invalid Service",
+                            "params":{"port":80}
+                        }
+                    ]
+                }
+            ]
+        }
     ]
 }
 
@@ -165,16 +199,19 @@ for service in tests["services"]:
             if "description" in test:
                 start_str += f" - {test['description']}"
             
-            print(start_str, end="")
+            print(start_str, end="", flush=True)
 
             data = json.dumps(query)
-            r = requests.post(f"{api}/{test['type']}/", data=query_json, auth=auth)
-            answer = r.json()
+            try:
+                r = requests.post(f"{api}/{test['type']}/", data=query_json, auth=auth)
+                answer = r.json()
 
-            if "error" in answer:
-                print(f"Error: {answer["error"]}")
-            else:
-                output = f" - up: {answer['up']}"
-                if "response" in answer:
-                    output += f" time: {answer['response']}"
-                print(output)
+                if "error" in answer:
+                    print(f"Error: {answer["error"]}")
+                else:
+                    output = f" - up: {answer['up']}"
+                    if "response" in answer:
+                        output += f" time: {answer['response']}"
+                    print(output)
+            except Exception as ex:
+                print(f"Error: {ex}")
