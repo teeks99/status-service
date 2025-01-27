@@ -1,86 +1,307 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Host Status Checker</title>
+    <title>Dynamic Host Status Checker</title>
     <style>
         body { font-family: sans-serif; margin: 20px; }
-        .host-entry { margin-bottom: 10px; }
+        .service-block { margin-bottom: 20px; border: 1px solid #ccc; padding: 10px; }
+        .host-entry { margin-left: 20px; margin-bottom: 5px; }
+        .test-result { margin-left: 30px; }
         .status-up { color: green; }
         .status-down { color: red; }
         .status-error { color: orange; }
+         .result-area {margin-left: 40px; display: inline;}
     </style>
 </head>
 <body>
 
-    <h1>Host Status Checker</h1>
+    <h1>Dynamic Host Status Checker</h1>
 
-    <div id="status-container">
+    <div id="results-container">
         <!-- Results will be displayed here -->
     </div>
-
     <script>
-        const hosts = [
-            "bart",
-            "blinky.teeks99.com",
-        ];
+        const tests = {
+            "services":[
+                {
+                    "api":"http://skinner:14201",
+                    "user":"default",
+                    "apikey":"insecure",
+                    "hosts": [
+                        {
+                            "host":"bart",
+                            "tests":[
+                                {
+                                    "type":"tcpport",
+                                    "description":"port 80",
+                                    "params":{"port":80}
+                                },
+                                {
+                                    "type":"tcpport",
+                                    "description":"default to port 80"
+                                },
+                                {
+                                    "type":"tcpport",
+                                    "description":"closed port",
+                                    "params":{"port":3}
+                                },
+                                {
+                                    "type":"systemping"
+                                },
+                                {
+                                    "type":"httpget",
+                                    "description":"all defaults"
+                                },
+                                {
+                                    "type":"httpget",
+                                    "description":"all defaults",
+                                    "params": {"path": "/Minecraft/"}
+                                },
+                                {
+                                    "type":"httpget",
+                                    "description":"all defaults",
+                                    "params": {"path": "/Minecraft/"}
+                                },
+                                {
+                                    "type":"httpget",
+                                    "description":"all defaults",
+                                    "params": {"port": 8100}
+                                }
+                            ]
+                        },
+                        {
+                            "host":"blinky.teeks99.com",
+                            "tests":[
+                                {
+                                    "type":"tcpport",
+                                    "description":"Non-local",
+                                    "params":{"port":80}
+                                },
+                                {
+                                    "type":"systemping",
+                                    "description":"Non-local"
+                                },
+                                {
+                                    "type":"httpget",
+                                    "description":"Non-local"
+                                },
+                                {
+                                    "type":"httpget",
+                                    "description":"HTTPS",
+                                    "params": {"protocool":"https"}
+                                }
+                            ]
+                        },
+                        {
+                            "host":"10.53.1.1",
+                            "tests":[
+                                {
+                                    "type":"tcpport",
+                                    "description":"IP Only",
+                                    "params":{"port":80}
+                                },
+                                {
+                                    "type":"systemping",
+                                    "description":"IP Only"
+                                },
+                                {
+                                    "type":"httpget",
+                                    "description":"IP Only"
+                                }
+                            ]
+                        },
+                        {
+                            "host":"invalid",
+                            "tests":[
+                                {
+                                    "type":"tcpport",
+                                    "description":"Invalid Host",
+                                    "params":{"port": 80}
+                                },
+                                {
+                                    "type":"systemping",
+                                    "description":"Invalid Host"
+                                },
+                                {
+                                    "type":"httpget",
+                                    "description":"Invalid Host"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "api":"http://jacqueline:14201",
+                    "user":"default",
+                    "apikey":"insecure",
+                    "hosts": [
+                        {
+                            "host":"bart",
+                            "tests":[
+                                {
+                                    "type":"tcpport",
+                                    "description":"Second Service",
+                                    "params":{"port":80}
+                                },
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "api":"http://10.53.1.20:14201",
+                    "user":"default",
+                    "apikey":"insecure",
+                    "hosts": [
+                        {
+                            "host":"bart",
+                            "tests":[
+                                {
+                                    "type":"tcpport",
+                                    "description":"Second Service",
+                                    "params":{"port":80}
+                                },
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "api":"http://skinner:14201",
+                    "user":"unknownuser",
+                    "apikey":"insecure",
+                    "hosts": [
+                        {
+                            "host":"bart",
+                            "tests":[
+                                {
+                                    "type":"tcpport",
+                                    "description":"Bad User",
+                                    "params":{"port":80}
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "api":"http://skinner:14201",
+                    "user":"default",
+                    "apikey":"badpassword",
+                    "hosts": [
+                        {
+                            "host":"bart",
+                            "tests":[
+                                {
+                                    "type":"tcpport",
+                                    "description":"Bad User",
+                                    "params":{"port":80}
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "api":"http://invalid:14201",
+                    "user":"default",
+                    "apikey":"insecure",
+                    "hosts": [
+                        {
+                            "host":"bart",
+                            "tests":[
+                                {
+                                    "type":"tcpport",
+                                    "description":"Invalid Service",
+                                    "params":{"port":80}
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
 
-        const apiUrl = "http://skinner:14201/systemping/";
-        const username = "default"; // Replace with your username
-        const password = "insecure"; // Replace with your password
-       
+        const resultsContainer = document.getElementById('results-container');
 
-        const statusContainer = document.getElementById('status-container');
+       async function runTest(api, auth, host, test) {
+            let query = { "host": host };
+            if (test.params) {
+                query = { ...query, ...test.params };
+            }
+            const authString =  'Basic ' + btoa(`${auth.user}:${auth.apikey}`);
 
-       async function checkHostStatus(host) {
-             const hostDiv = document.createElement('div');
-            hostDiv.classList.add('host-entry');
-            hostDiv.innerHTML = `Checking: ${host}... `;
-            statusContainer.appendChild(hostDiv);
-            
             try {
-                payload = {"host": host};
-                const response = await fetch(apiUrl, {
+                 const response = await fetch(`${api}/${test.type}/`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                         'Authorization': 'Basic ' + btoa(`${username}:${password}`), // Basic Auth
+                        'Authorization': authString,
                     },
-                    body: JSON.stringify(payload),
+                    body: JSON.stringify(query),
                 });
-                
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
+
                 const data = await response.json();
+                return data;
+            } catch (error) {
+                 return {error: error.message};
+             }
+        }
 
-                if (data && typeof data === 'object') {
-                   if(data.up === true) {
-                    hostDiv.innerHTML += `<span class="status-up">UP</span>`;
-                  } else if(data.up === false){
-                    hostDiv.innerHTML += `<span class="status-down">DOWN</span>`;
-                  }else{
-                    hostDiv.innerHTML += `<span class="status-error">Unknown Status</span> (No 'up' key)`;
-                  }
 
-                } else {
-                  hostDiv.innerHTML += `<span class="status-error">Invalid JSON</span>`;
+        async function processServices() {
+             for (const service of tests.services) {
+                const serviceDiv = document.createElement('div');
+                serviceDiv.classList.add('service-block');
+                serviceDiv.innerHTML = `<h3>Service: ${service.api}</h3>`;
+                resultsContainer.appendChild(serviceDiv);
+                
+                const auth = {user: service.user, apikey: service.apikey};
+                for(const host of service.hosts)
+                {
+                    const hostDiv = document.createElement('div');
+                    hostDiv.classList.add('host-entry');
+                    hostDiv.innerHTML = `<b>Host: ${host.host}</b>`;
+                    serviceDiv.appendChild(hostDiv);
+
+                    for (const test of host.tests){
+                       const testDiv = document.createElement('div');
+                        testDiv.classList.add('test-result');
+                        let testDescription = `${test.type}`;
+                         if (test.description) {
+                            testDescription += ` - ${test.description}`;
+                        }
+                        testDiv.innerHTML = `${testDescription}: `;
+                        hostDiv.appendChild(testDiv);
+
+                        let resultArea = document.createElement('span');
+                        resultArea.classList.add("result-area");
+                        resultArea.innerText = "Checking...";
+                        testDiv.appendChild(resultArea);
+
+                       const result = await runTest(service.api, auth, host.host, test);
+
+                       if(result.error){
+                        resultArea.innerText = ` Error: ${result.error}`;
+                         resultArea.classList.add("status-error");
+                       }else if(result.up === true){
+                            resultArea.innerText = "UP";
+                             resultArea.classList.add("status-up");
+                       }else if(result.up === false){
+                           resultArea.innerText = "DOWN";
+                           resultArea.classList.add("status-down");
+                       }else{
+                           resultArea.innerText = `Unknown status. ${JSON.stringify(result)}`;
+                           resultArea.classList.add("status-error");
+                       }
+                    }
                 }
 
-
-            } catch (error) {
-                hostDiv.innerHTML += `<span class="status-error">Error</span>: ${error.message}`;
             }
         }
 
-        async function checkAllHosts() {
-             for(const host of hosts) {
-              await checkHostStatus(host);
-            }
-        }
-       
-       checkAllHosts();
 
+        processServices();
     </script>
-
 </body>
 </html>
