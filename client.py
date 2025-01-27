@@ -129,6 +129,23 @@ tests = {
             ]
         },
         {
+            "api":"http://10.53.1.20:14201",
+            "user":"default",
+            "apikey":"insecure",
+            "hosts": [
+                {
+                    "host":"bart",
+                    "tests":[
+                        {
+                            "type":"tcpport",
+                            "description":"Second Service",
+                            "params":{"port":80}
+                        },
+                    ]
+                }
+            ]
+        },
+        {
             "api":"http://skinner:14201",
             "user":"unknownuser",
             "apikey":"insecure",

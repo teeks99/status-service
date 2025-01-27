@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.middleware.cors import CORSMiddleware
+import uvicorn
 from pydantic import BaseModel
 from typing import Annotated
 
@@ -115,3 +116,8 @@ async def tcp_port(credentials: Annotated[HTTPBasicCredentials, Depends(security
         return {"up": True, "response": end-start}
     except:
         return {"up": False}
+    
+
+
+if __name__ == '__main__':
+    uvicorn.run(app, port=14201, host='')
