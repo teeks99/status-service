@@ -2,64 +2,179 @@ import requests
 from requests.auth import HTTPBasicAuth
 import json
 
-service_host = "skinner"
-service_port = 14201
-api = f"http://{service_host}:{service_port}"
+tests = {
+    "services":[
+        {
+            "api":"http://skinner:14201",
+            "user":"default",
+            "apikey":"insecure",
+            "hosts": [
+                {
+                    "host":"bart",
+                    "tests":[
+                        {
+                            "type":"tcpport",
+                            "description":"port 80",
+                            "params":{"port":80}
+                        },
+                        {
+                            "type":"tcpport",
+                            "description":"default to port 80"
+                        },
+                        {
+                            "type":"tcpport",
+                            "description":"closed port",
+                            "params":{"port":3}
+                        },
+                        {
+                            "type":"systemping"
+                        },
+                        {
+                            "type":"httpget",
+                            "description":"all defaults"
+                        },
+                        {
+                            "type":"httpget",
+                            "description":"all defaults",
+                            "params": {"path": "/Minecraft/"}
+                        },
+                        {
+                            "type":"httpget",
+                            "description":"all defaults",
+                            "params": {"path": "/Minecraft/"}
+                        },
+                        {
+                            "type":"httpget",
+                            "description":"all defaults",
+                            "params": {"port": 8100}
+                        }
+                    ]
+                },
+                {
+                    "host":"blinky.teeks99.com",
+                    "tests":[
+                        {
+                            "type":"tcpport",
+                            "description":"Non-local",
+                            "params":{"port":80}
+                        },
+                        {
+                            "type":"systemping",
+                            "description":"Non-local"
+                        },
+                        {
+                            "type":"httpget",
+                            "description":"Non-local"
+                        },
+                        {
+                            "type":"httpget",
+                            "description":"HTTPS",
+                            "params": {"protocool":"https"}
+                        }
+                    ]
+                },
+                {
+                    "host":"10.53.1.1",
+                    "tests":[
+                        {
+                            "type":"tcpport",
+                            "description":"IP Only",
+                            "params":{"port":80}
+                        },
+                        {
+                            "type":"systemping",
+                            "description":"IP Only"
+                        },
+                        {
+                            "type":"httpget",
+                            "description":"IP Only"
+                        }
+                    ]
+                },
+                {
+                    "host":"invalid",
+                    "tests":[
+                        {
+                            "type":"tcpport",
+                            "description":"Invalid Host",
+                            "params":{"port": 80}
+                        },
+                        {
+                            "type":"systemping",
+                            "description":"Invalid Host"
+                        },
+                        {
+                            "type":"httpget",
+                            "description":"Invalid Host"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "api":"http://skinner:14201",
+            "user":"unknownuser",
+            "apikey":"insecure",
+            "hosts": [
+                {
+                    "host":"bart",
+                    "tests":[
+                        {
+                            "type":"tcpport",
+                            "description":"Bad User",
+                            "params":{"port":80}
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "api":"http://skinner:14201",
+            "user":"default",
+            "apikey":"badpassword",
+            "hosts": [
+                {
+                    "host":"bart",
+                    "tests":[
+                        {
+                            "type":"tcpport",
+                            "description":"Bad User",
+                            "params":{"port":80}
+                        }
+                    ]
+                }
+            ]
+        },
+    ]
+}
 
-basic_auth = HTTPBasicAuth('default', 'insecure')
+for service in tests["services"]:
+    api = service["api"]
+    auth = HTTPBasicAuth(service["user"], service["apikey"])
 
-print("No Auth")
-tcp_query = {"host": "bart", "port": 80}
-print(requests.post(f"{api}/tcpport/", data=json.dumps(tcp_query)).json())
+    for host in service["hosts"]:
+        hostname = host["host"]
+        for test in host["tests"]:
+            query = {"host": hostname}
+            if "params" in test:
+                query.update(test["params"])
+            
+            query_json = json.dumps(query)
 
-print("TCP on port 80")
-tcp_query = {"host": "bart", "port": 80}
-print(requests.post(f"{api}/tcpport/", data=json.dumps(tcp_query), auth=basic_auth).json())
+            start_str = f"{hostname}  {test['type']}"
+            if "description" in test:
+                start_str += f" - {test['description']}"
+            
+            print(start_str, end="")
 
-print("TCP, defaults to port 80")
-tcp_query = {"host": "bart"}
-print(requests.post(f"{api}/tcpport/", data=json.dumps(tcp_query), auth=basic_auth).json())
+            data = json.dumps(query)
+            r = requests.post(f"{api}/{test['type']}/", data=query_json, auth=auth)
+            answer = r.json()
 
-print("TCP non-local")
-tcp_query = {"host": "blinky.teeks99.com", "port": 80}
-print(requests.post(f"{api}/tcpport/", data=json.dumps(tcp_query), auth=basic_auth).json())
-
-print("TCP only IP")
-tcp_query = {"host": "10.53.1.1", "port": 80}
-print(requests.post(f"{api}/tcpport/", data=json.dumps(tcp_query), auth=basic_auth).json())
-
-print("TCP invalid host")
-tcp_query = {"host": "invalid", "port": 80}
-print(requests.post(f"{api}/tcpport/", data=json.dumps(tcp_query), auth=basic_auth).json())
-
-print("TCP closed port")
-tcp_query = {"host": "bart", "port": 3}
-print(requests.post(f"{api}/tcpport/", data=json.dumps(tcp_query), auth=basic_auth).json())
-
-
-
-print("System Ping")
-ping_query = {"host": "bart"}
-print(requests.post(f"{api}/systemping/", data=json.dumps(ping_query), auth=basic_auth).json())
-
-print("System Ping, invalid host")
-ping_query = {"host": "invalid"}
-print(requests.post(f"{api}/systemping/", data=json.dumps(ping_query), auth=basic_auth).json())
-
-
-
-print("HTTP, all defaults")
-http_query = {"host": "bart"}
-print(requests.post(f"{api}/httpget/", data=json.dumps(http_query), auth=basic_auth).json())
-
-print("HTTP, path")
-http_query = {"host": "bart", "path": "/Minecraft/"}
-print(requests.post(f"{api}/httpget/", data=json.dumps(http_query), auth=basic_auth).json())
-
-print("HTTP, port")
-http_query = {"host": "bart", "port": 8100}
-print(requests.post(f"{api}/httpget/", data=json.dumps(http_query), auth=basic_auth).json())
-
-print("HTTP, https")
-http_query = {"host": "blinky.teeks99.com", "protocool":"https"}
-print(requests.post(f"{api}/httpget/", data=json.dumps(http_query), auth=basic_auth).json())
+            if "error" in answer:
+                print(f"Error: {answer["error"]}")
+            else:
+                output = f" - up: {answer['up']}"
+                if "response" in answer:
+                    output += f" time: {answer['response']}"
+                print(output)
